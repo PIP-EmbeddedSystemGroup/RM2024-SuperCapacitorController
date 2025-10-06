@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2023
  */
 
-#define MAX_CAP_VOLTAGE 28.8f
+#define MAX_CAP_VOLTAGE 26.0f
 
 #define SHORT_CIRCUIT_CURRENT 15.5f
 #define SHORT_CIRCUIT_VOLTAGE 4.0f

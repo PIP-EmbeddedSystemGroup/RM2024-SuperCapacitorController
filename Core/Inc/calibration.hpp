@@ -4,10 +4,10 @@
 #error "please specify hardware id"
 #endif
 
-// #define CALIBRATION_MODE
-#define IGNORE_CAPACITOR_ERROR
+//#define CALIBRATION_MODE
+//#define IGNORE_CAPACITOR_ERROR
 
-#if (HARDWARE_ID == -1)
+#if (HARDWARE_ID == 1)
 
 // template for setting calibration values
 
@@ -51,6 +51,7 @@
 
 // I_REFEREE should have (REFEREESystem -> DCDC_ASide) as positive
 // I_Chassis should have (Chassis -> DCDC_ASide) as positive
+
 
 #elif (HARDWARE_ID == 102)
 
@@ -156,6 +157,25 @@
 
 #define I_B_CONVERT_GAIN (-0.020219526f)
 #define I_B_CONVERT_BIAS 41.32986713f
+
+#elif (HARDWARE_ID == 211)
+
+
+#define VA_GAIN  0.008022f
+#define VA_BIAS 0.06695010f
+
+#define VB_GAIN 0.008065f
+#define VB_BIAS  0.07674410f
+
+#define I_REFEREE_GAIN  0.018646f
+#define I_REFEREE_BIAS (-38.15783210f)
+
+#define I_A_CONVERT_GAIN 0.018702f
+#define I_A_CONVERT_BIAS (-38.279273f)
+
+#define I_B_CONVERT_GAIN (-0.015462f)
+#define I_B_CONVERT_BIAS 31.64163210f
+
 
 #endif
 

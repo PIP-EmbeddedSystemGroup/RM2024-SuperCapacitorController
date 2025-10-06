@@ -4,7 +4,6 @@ namespace PowerManager
 {
 
 ControlData ControlData::controlData;
-
 ControlData::ControlData() : refereePowerLimit(43.0f), energyRemain(10.0f), enableOutput(false) {}
 
 Status Status::status;
@@ -334,6 +333,7 @@ static void handleShortCircuit()
     }
 #endif
 }
+float dutyDiffRatio = 0.0f;
 static void handleErrorState()
 {
     /* Under Voltage */
@@ -393,7 +393,7 @@ static void handleErrorState()
 #endif
 
     /* Over Voltage */
-    if (SampleManager::ProcessedData::processedData.vASide > 31.0f || SampleManager::ProcessedData::processedData.vBSide > 31.0f)
+    if (SampleManager::ProcessedData::processedData.vASide > 31.0f || SampleManager::ProcessedData::processedData.vBSide > 28.0f)
     {
         errorCheckData.currentError |= ERROR_OVER_VOLTAGE;
         Status::status.errorCode |= ERROR_OVER_VOLTAGE;
@@ -465,11 +465,11 @@ static void handleErrorState()
      * capacitor will be very large. The charge will be monitored, if the charge is too large, the capacitor is considered to be shorted or
      * overcharged.
      */
-    errorCheckData.capVoltageChange += ProcessedSampleData::processedSampleData.vBSide - errorCheckData.lastCapVoltage;
-    errorCheckData.lastCapVoltage = ProcessedSampleData::processedSampleData.vBSide;
+    errorCheckData.capVoltageChange += SampleManager::ProcessedData::processedData.vBSide - errorCheckData.lastCapVoltage;
+    errorCheckData.lastCapVoltage = SampleManager::ProcessedData::processedData.vBSide;
     if (errorCheckData.capVoltageChange > 3.0f || errorCheckData.capVoltageChange < -3.0f)
     {
-        float estimatedCapacitance = ProcessedSampleData::processedSampleData.capCharge / errorCheckData.capVoltageChange * 2.777777809e-05f;
+        float estimatedCapacitance = SampleManager::ProcessedData::processedData.capCharge / errorCheckData.capVoltageChange * 2.777777809e-05f;
         estimatedCapacitance       = M_ABS(estimatedCapacitance);
 
         if (Status::status.outputEnabled && estimatedCapacitance < 4e-5f)  // cap disconnected
@@ -481,9 +481,9 @@ static void handleErrorState()
 
         errorCheckData.capacitanceEstimateCnt              = 0;
         errorCheckData.capVoltageChange                    = 0.0f;
-        ProcessedSampleData::processedSampleData.capCharge = 0.0f;
+        SampleManager::ProcessedData::processedData.capCharge = 0.0f;
     }
-    else if (ProcessedSampleData::processedSampleData.capCharge > 200000.0f || ProcessedSampleData::processedSampleData.capCharge < -200000.0f)
+    else if (SampleManager::ProcessedData::processedData.capCharge > 200000.0f || SampleManager::ProcessedData::processedData.capCharge < -200000.0f)
     {
         if (Status::status.outputEnabled && errorCheckData.capVoltageChange < 0.2f &&
             errorCheckData.capVoltageChange > -0.2f)  // cap overcharged / short circuit
@@ -499,13 +499,13 @@ static void handleErrorState()
         }
         errorCheckData.capacitanceEstimateCnt              = 0;
         errorCheckData.capVoltageChange                    = 0.0f;
-        ProcessedSampleData::processedSampleData.capCharge = 0.0f;
+        SampleManager::ProcessedData::processedData.capCharge = 0.0f;
     }
     else if (errorCheckData.capacitanceEstimateCnt++ > 10000)
     {
         errorCheckData.capacitanceEstimateCnt              = 0;
         errorCheckData.capVoltageChange                    = 0.0f;
-        ProcessedSampleData::processedSampleData.capCharge = 0.0f;
+        SampleManager::ProcessedData::processedData.capCharge = 0.0f;
     }
 
     if (--errorCheckData.capErrorCnt < 0)
@@ -521,14 +521,15 @@ static void handleErrorState()
      * @note When error with the buck-boost circuit occurred, normally, the efficiency will be very low, and the duty ratio will be abnormal.
      * This is sometimes caused by the burned MOSFET, abnormal MOSFET driver, or abnormal MOSFET driving voltage.
      */
-    float dutyDiffRatio =
-        SampleManager::ProcessedData::processedData.vASide / SampleManager::ProcessedData::processedData.vBSide * tempData.outputDuty;
+    dutyDiffRatio =
+        tempData.outputDuty * (SampleManager::ProcessedData::processedData.vASide / SampleManager::ProcessedData::processedData.vBSide) ;
     dutyDiffRatio = M_ABS(dutyDiffRatio);
     if (Status::status.outputEnabled &&
         (((SampleManager::ProcessedData::processedData.pASide > 10.0f || SampleManager::ProcessedData::processedData.pBSide > 10.0f) &&
           SampleManager::ProcessedData::processedData.efficiency < 0.5f) ||  // efficiency abnormal
          dutyDiffRatio > 2.0f ||
-         dutyDiffRatio < 0.5f))  // duty ratio abnormal
+         dutyDiffRatio < 0.5f)
+        )  // duty ratio abnormal
     {
         if (errorCheckData.buckBoostCheckCnt++ > 40)
         {
